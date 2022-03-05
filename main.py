@@ -12,6 +12,7 @@ from subprocess import Popen, PIPE
 import threading
 
 rect = None
+auto = True
 
 prev_flight_data = None
 flight_data = None
@@ -56,7 +57,7 @@ def detect_object():
     with open("./darknet_cfg/coco_classes.txt", "r") as f:
         class_names = [cname.strip() for cname in f.readlines()]
     COLORS = [np.random.randint(0, 256, [3]).astype(np.uint8).tolist() for _ in range(len(class_names))]
-    print(COLORS)
+    # print(COLORS)
     # net = cv2.dnn.readNet("yolov3-tiny_face_best.weights", "yolov3-tiny_face.cfg")
     net = cv2.dnn.readNet("./darknet_cfg/yolov3-tiny.weights", "./darknet_cfg/yolov3-tiny.cfg")
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
@@ -93,6 +94,12 @@ def detect_object():
                         if not person or person[2]*person[3] <= w*h:    # バウンディングボックスの面積が大きければ更新
                             person = (x, y, w, h)
                 
+                cv2.imshow('YOLOv3-tiny', frame)
+                os.remove(img_folder_path + '/' + img_file)
+                
+                global auto
+                if not auto:
+                    break
                 if person:  # フレームから人が検出された場合
                     x, y, w, h = person # 人のバウンディングボックス
                     W, H = 976, 759 # 画像の横，縦の長さ
@@ -109,13 +116,17 @@ def detect_object():
                         pg.keyDown('d')
                         sleep(0.1 + 0.1*(dx/W))
                         pg.keyUp('d')
-                    else:   # 画像の中央に人がいる場合
-                        # その場に静止する
-                        sleep(0.1)
+
+                    if h*w < W*H/8:
+                        pg.keyDown('w')
+                        sleep(0.05)
+                        pg.keyUp('w')
+                    elif h*w > W*H/4:
+                        pg.keyDown('s')
+                        sleep(0.05)
+                        pg.keyUp('w')
                 
-                cv2.imshow('YOLOv3-tiny', frame)
                 cv2.waitKey(1)
-                os.remove(img_folder_path + '/' + img_file)
 
             if img_file is None:
                 cv2.destroyAllWindows()
@@ -155,12 +166,15 @@ def main():
     drone.start_video()
     drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
     drone.subscribe(drone.EVENT_VIDEO_FRAME, handler)
-    speed = 25
     
     def on_press(key):
         """キーが押された時に呼ばれるコールバック
         """
         print(f'{key} pressed')
+        speed = 25
+        
+        if key in [keyboard.Key.esc, keyboard.Key.space]:
+            return
         
         if key == keyboard.Key.tab:
             drone.takeoff()
@@ -176,13 +190,13 @@ def main():
             drone.counter_clockwise(speed)
         elif key == keyboard.Key.right: # 右旋回
             drone.clockwise(speed)
-        elif key == 'w': # 前方
+        elif key.char == 'w': # 前方
             drone.forward(speed)
-        elif key == 's': # 後方
+        elif key.char == 's': # 後方
             drone.backward(speed)
-        elif key == 'a': # 左
+        elif key.char == 'a': # 左
             drone.left(speed)
-        elif key == 'd': # 右
+        elif key.char == 'd': # 右
             drone.right(speed)
         else:
             return
@@ -194,7 +208,11 @@ def main():
         print(f'{key} release')
         if key == keyboard.Key.esc: # escが押された場合
             return False    # 検知を終了する
-        
+        if key == keyboard.Key.space:
+            global auto
+            auto = not auto
+            sleep(1)
+            return False
         
         if key == keyboard.Key.tab:
             drone.takeoff()
@@ -210,13 +228,13 @@ def main():
             drone.counter_clockwise(0)
         elif key == keyboard.Key.right: # 右旋回
             drone.clockwise(0)
-        elif key == 'w': # 前方
+        elif key.char == 'w': # 前方
             drone.forward(0)
-        elif key == 's': # 後方
+        elif key.char == 's': # 後方
             drone.backward(0)
-        elif key == 'a': # 左
+        elif key.char == 'a': # 左
             drone.left(0)
-        elif key == 'd': # 右
+        elif key.char == 'd': # 右
             drone.right(0)
         else:
             return
