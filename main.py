@@ -40,7 +40,7 @@ def handler(event, sender, data, **args):
         flight_data = data
     elif event is drone.EVENT_VIDEO_FRAME:
         if video_player is None:
-            video_player = Popen(['mplayer', '-fps', '35', '-'], stdin=PIPE)
+            video_player = Popen(['mplayer', '-fps', '35', '-', 'libx264'], stdin=PIPE)
         try:
             video_player.stdin.write(data)
         except IOError as e:
@@ -54,12 +54,12 @@ def detect_object():
     CONFIDENCE_THRESHOLD = 0.3
     NMS_THRESHOLD = 0.4
     class_names = []
-    with open("./darknet_cfg/coco_classes.txt", "r") as f:
+    with open("darknet_cfg/coco_classes.txt", "r") as f:
         class_names = [cname.strip() for cname in f.readlines()]
     COLORS = [np.random.randint(0, 256, [3]).astype(np.uint8).tolist() for _ in range(len(class_names))]
     # print(COLORS)
     # net = cv2.dnn.readNet("yolov3-tiny_face_best.weights", "yolov3-tiny_face.cfg")
-    net = cv2.dnn.readNet("./darknet_cfg/yolov3-tiny.weights", "./darknet_cfg/yolov3-tiny.cfg")
+    net = cv2.dnn.readNet("darknet_cfg/yolov3-tiny.weights", "darknet_cfg/yolov3-tiny.cfg")
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 
     model = cv2.dnn_DetectionModel(net)
@@ -109,19 +109,19 @@ def detect_object():
                     if cx < W/3:    # 画像の左側に人がいる場合
                         # 左に進む
                         pg.keyDown('a')
-                        sleep(0.1 + 0.1*(dx/W))
+                        sleep(0.2 + 0.1*(dx/W))
                         pg.keyUp('a')
                     elif cx > (W/3)*2:  # 画像の右側に人がいる場合
                         # 右に進む
                         pg.keyDown('d')
-                        sleep(0.1 + 0.1*(dx/W))
+                        sleep(0.2 + 0.1*(dx/W))
                         pg.keyUp('d')
 
-                    if h*w < W*H/8:
+                    if h*w < W*H/10:
                         pg.keyDown('w')
                         sleep(0.05)
                         pg.keyUp('w')
-                    elif h*w > W*H/4:
+                    elif h*w > W*H/3:
                         pg.keyDown('s')
                         sleep(0.05)
                         pg.keyUp('w')
