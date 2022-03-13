@@ -19,13 +19,6 @@ flight_data = None
 video_player = None
 
 
-def update(old, new, max_delta=0.3):
-    if abs(old-new) <= max_delta:
-        res = new
-    else:
-        res = 0.0
-    return res
-
 def handler(event, sender, data, **args):
     global prev_flight_data
     global flight_data
